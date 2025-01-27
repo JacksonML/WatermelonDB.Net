@@ -10,9 +10,9 @@ namespace WatermelonDB.Net.Models
     {
         public List<T> Created { get; set; }
         public List<T> Updated { get; set; }
-        public List<T> Deleted { get; set; }
+        public List<string> Deleted { get; set; }
 
-        public ChangedTable(List<T> created, List<T> updated, List<T> deleted)
+        public ChangedTable(List<T> created, List<T> updated, List<string> deleted)
         {
             Created = created;
             Updated = updated;
