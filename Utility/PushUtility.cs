@@ -18,7 +18,7 @@ namespace WatermelonDB.Net.Utility
             Action<T>? onCreate = null, 
             Func<T, bool>? updatePrecheck = null, 
             Func<T, bool>? deletePrecheck = null)
-            where T : class, IWatermelonDBModel<T>
+            where T : class, IWatermelonDBModel<T>, new()
         {
             if (changes == null) return;
 
@@ -46,7 +46,15 @@ namespace WatermelonDB.Net.Utility
             foreach (var deleted in changes.Deleted.Select(d => Guid.Parse(d)))
             {
                 var existing =dbSet.Where(deletePrecheck).FirstOrDefault(o => o.Id == deleted);
-                if (existing == null) continue; // should this be an error?
+                if (existing == null)
+                {
+                    var newObj = new T()
+                    {
+                        Id = deleted,
+                    };
+                    dbSet.Add(newObj);
+                    existing = newObj;
+                }
 
                 if (existing.IsDeleted == false)
                 {
