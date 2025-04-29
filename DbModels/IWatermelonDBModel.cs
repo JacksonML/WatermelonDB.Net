@@ -10,10 +10,13 @@ namespace WatermelonDB.Net.DbModels
     public interface IWatermelonDBModel<in T> where T : class
     {
         public Guid Id { get; set; }
-        [JsonPropertyName("last_modified")]
+        [JsonIgnore]
         public long LastModifiedAt { get; set; }
+        [JsonIgnore]
         public long CreatedAt { get; set; }
+        [JsonIgnore]
         public bool IsDeleted { get; set; }
+        [JsonIgnore]
         public long? DeletedAt { get; set; }
 
         public void Update(T newData);
