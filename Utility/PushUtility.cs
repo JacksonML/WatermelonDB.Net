@@ -22,18 +22,26 @@ namespace WatermelonDB.Net.Utility
         {
             if (changes == null) return;
 
+            updatePrecheck ??= o => true;
+            deletePrecheck ??= o => true;
+
             foreach (var created in changes.Created)
             {
+                // Double check for existing
+                var existing = dbSet.Where(updatePrecheck).FirstOrDefault(o => o.Id == created.Id);
+                if (existing != null)
+                {
+                    dbSet.Remove(existing);
+                }
+
                 created.CreatedAt = DateTime.UtcNow.ToLinuxEpochSeconds();
                 created.LastModifiedAt = DateTime.UtcNow.ToLinuxEpochSeconds();
                 onCreate?.Invoke(created);
             }
             dbSet.AddRange(changes.Created);
-            updatePrecheck ??= o => true;
-            deletePrecheck ??= o => true;
+
             foreach (var updated in changes.Updated)
             {
-                
                 var existing = dbSet.Where(updatePrecheck).FirstOrDefault(o => o.Id == updated.Id);
                 if (existing == null) continue; // should this be an error?
                 // todo, need to convert LastModifiedAt to epoch seconds
@@ -45,18 +53,25 @@ namespace WatermelonDB.Net.Utility
 
             foreach (var deleted in changes.Deleted.Select(d => Guid.Parse(d)))
             {
-                var existing =dbSet.Where(deletePrecheck).FirstOrDefault(o => o.Id == deleted);
+                var existing = dbSet.Where(deletePrecheck).FirstOrDefault(o => o.Id == deleted);
                 if (existing == null)
                 {
                     var newObj = new T()
                     {
                         Id = deleted,
                     };
-                    dbSet.Add(newObj);
-                    existing = newObj;
+                    try
+                    {
+                        dbSet.Add(newObj);
+                        existing = newObj;
+                    }
+                    catch
+                    {
+                        // Todo: handle
+                    }
                 }
 
-                if (existing.IsDeleted == false)
+                if (existing?.IsDeleted == false)
                 {
                     existing.DeletedAt = DateTime.UtcNow.ToLinuxEpochSeconds();
                     existing.IsDeleted = true;
