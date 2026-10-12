@@ -54,24 +54,14 @@ namespace WatermelonDB.Net.Utility
             foreach (var deleted in changes.Deleted.Select(d => Guid.Parse(d)))
             {
                 var existing = dbSet.Where(deletePrecheck).FirstOrDefault(o => o.Id == deleted);
-                if (existing == null)
-                {
-                    var newObj = new T()
-                    {
-                        Id = deleted,
-                    };
-                    try
-                    {
-                        dbSet.Add(newObj);
-                        existing = newObj;
-                    }
-                    catch
-                    {
-                        // Todo: handle
-                    }
-                }
 
-                if (existing?.IsDeleted == false)
+                // A record created and deleted on the device between syncs never reached the
+                // server, so no other device has it and it needs no tombstone. Inserting one
+                // with only an Id broke required foreign keys (e.g. a CookingSession's
+                // RecipeId) and failed every later push from that user.
+                if (existing == null) continue;
+
+                if (existing.IsDeleted == false)
                 {
                     existing.DeletedAt = DateTime.UtcNow.ToLinuxEpochSeconds();
                     existing.IsDeleted = true;
