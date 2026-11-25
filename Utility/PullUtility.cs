@@ -19,7 +19,9 @@ namespace WatermelonDB.Net.Utility
 
             var created = rows.Where(o => o.CreatedAt > lastPulledAt && o.IsDeleted == false).ToList();
             var updated = rows.Where(o => o.LastModifiedAt > lastPulledAt && o.CreatedAt <= lastPulledAt && o.IsDeleted == false).ToList();
-            var deleted = rows.Where(o => o.IsDeleted == true && o.DeletedAt > lastPulledAt).Select(o => o.Id.ToString()).ToList();
+            // Format the ids in .NET, not SQL: SQLite stores Guids as upper-case text, and WatermelonDB
+            // ids are lower-case, so a SQL-side ToString sent deletions the app never matched.
+            var deleted = rows.Where(o => o.IsDeleted == true && o.DeletedAt > lastPulledAt).Select(o => o.Id).ToList().Select(id => id.ToString()).ToList();
 
             var changes = new ChangedTable<T>(created, updated, deleted);
 
